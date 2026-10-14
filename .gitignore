@@ -7,6 +7,14 @@ musickit.json
 # ---- 依赖 ----
 node_modules/
 
+# ---- 桌面版构建产物 ----
+dist/
+release/
+out/
+*.dmg
+*.AppImage
+*.exe
+
 # ---- 系统 ----
 .DS_Store
 

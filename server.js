@@ -3,13 +3,14 @@ const fs = require('fs');
 const path = require('path');
 const jwt = require('jsonwebtoken');
 const netease = require('NeteaseCloudMusicApi');
-const { normName, hasVariantMarker, colorFromName } = require('./lib/music');
+const { normName, hasVariantMarker, colorFromName, selectStudioAlbums } = require('./lib/music');
 const { fetchArtistAlbums, resolveItunesArtistId, resolveAvatar, fetchITunesAlbumMap } = require('./lib/sources');
 
 // ═══════════════════════════════════════════
 //  配置
 // ═══════════════════════════════════════════
 const PORT = process.env.PORT || 8088;
+const HOST = process.env.HOST || '0.0.0.0';
 const PROXY = process.env.NETEASE_PROXY || undefined;
 
 const ARTISTS_FILE = path.join(__dirname, 'artists.json');
@@ -128,7 +129,7 @@ async function probeCookie(cookie) {
 // ═══════════════════════════════════════════
 // 未匹配上的专辑会打日志，而不是静默丢弃
 async function matchCuratedAlbums(artist) {
-  const all = await fetchArtistAlbums(artist.id);
+  const all = selectStudioAlbums(await fetchArtistAlbums(artist.id));
   const normed = new Map();
   for (const al of all) {
     const key = normName(al.name);
@@ -151,8 +152,8 @@ async function matchCuratedAlbums(artist) {
     if (!hit) {
       try {
         const sr = await netease.cloudsearch({ keywords: c, type: 10, limit: 3, proxy: PROXY });
-        const list = (sr.body && sr.body.result && sr.body.result.albums) || [];
-        hit = list.find(a => normName(a.name) === key || normName(a.name).startsWith(key)) || null;
+        const list = selectStudioAlbums((sr.body && sr.body.result && sr.body.result.albums) || []);
+        hit = list.find(a => (String(a.artist?.id) === String(artist.id) || a.artists?.some(item => String(item.id) === String(artist.id))) && normName(a.name) === key) || null;
       } catch (e) {}
     }
     if (hit) albums.push(hit); else unmatched.push(c);
@@ -161,7 +162,7 @@ async function matchCuratedAlbums(artist) {
   if (unmatched.length) {
     console.warn('⚠ [' + artist.name + '] 有 ' + unmatched.length + ' 张专辑没匹配上：' + unmatched.join(' / '));
   }
-  return { albums, unmatched };
+  return { albums: selectStudioAlbums(albums), unmatched };
 }
 
 async function getArtistAlbumsWithCovers(artist) {
@@ -190,6 +191,26 @@ async function handleAPI(req, res) {
   const url = new URL(req.url, 'http://localhost:' + PORT);
   const route = url.pathname;
 
+  // Same-origin album textures for the sandboxed desktop renderer.
+  if (route === '/api/cover') {
+    let target;
+    try { target = new URL(url.searchParams.get('url')); } catch { json(res, 400, { message: 'Invalid cover URL' }); return; }
+    if (target.protocol !== 'https:' || target.port || target.username || target.password ||
+      !(/^(?:p[0-9]+\.)music\.126\.net$/.test(target.hostname) || target.hostname.endsWith('.mzstatic.com'))) {
+      json(res, 400, { message: 'Unsupported cover source' }); return;
+    }
+    try {
+      const response = await fetch(target, { signal: AbortSignal.timeout(10000), redirect: 'error' });
+      const type = response.headers.get('content-type') || '';
+      if (!response.ok || !type.startsWith('image/')) throw new Error('Invalid cover');
+      const chunks = []; let size = 0;
+      for await (const chunk of response.body) { size += chunk.length; if (size > 8 * 1024 * 1024) throw new Error('Cover too large'); chunks.push(chunk); }
+      res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'public, max-age=86400' });
+      res.end(Buffer.concat(chunks));
+    } catch { json(res, 502, { message: 'Cover temporarily unavailable' }); }
+    return;
+  }
+
   // 艺人列表（前端开场列表用）
   if (route === '/api/artists') {
     try {
@@ -208,7 +229,14 @@ async function handleAPI(req, res) {
     const id = url.searchParams.get('id');
     if (!id) { res.writeHead(400); res.end('Missing id'); return; }
     const artist = ARTIST_BY_ID.get(String(id));
-    if (!artist) { json(res, 404, { code: -1, message: 'artists.json 里没有 id=' + id + ' 的艺人' }); return; }
+    if (!artist) {
+      if (!/^\d+$/.test(id)) { json(res, 400, { message: 'Invalid artist id' }); return; }
+      try {
+        const catalog = await fetchArtistAlbums(id);
+        json(res, 200, { hotAlbums: selectStudioAlbums(catalog).map(album => ({ ...album, coverUrl: album.picUrl?.replace(/^http:/, 'https:') })), unmatched: [] });
+      } catch { json(res, 502, { message: 'Could not load artist albums' }); }
+      return;
+    }
     try {
       const card = await hydrate(artist);
       const { albums, unmatched } = await getArtistAlbumsWithCovers(card);
@@ -311,7 +339,9 @@ async function handleAPI(req, res) {
     const type = url.searchParams.get('type') || '1';
     if (!keywords) { res.writeHead(400); res.end('Missing keywords'); return; }
     try {
-      const result = await netease.cloudsearch({ keywords, type: Number(type), limit: 20, cookie: cookieOf(req) || undefined, proxy: PROXY });
+      const params = { keywords, type: Number(type), limit: 40, offset: Math.max(0, Number(url.searchParams.get('offset')) || 0), cookie: cookieOf(req) || undefined, proxy: PROXY };
+      let result;
+      try { result = await netease.cloudsearch(params); } catch { result = await netease.search(params); }
       json(res, 200, result.body);
     } catch (e) {
       json(res, 500, { code: -1, message: e.message });
@@ -346,6 +376,9 @@ async function handleAPI(req, res) {
 //  Server
 // ═══════════════════════════════════════════
 const server = http.createServer((req, res) => {
+  if (process.env.VINYL_DESKTOP_TOKEN && req.headers['x-vinyl-desktop'] !== process.env.VINYL_DESKTOP_TOKEN) {
+    json(res, 403, { message: 'Forbidden' }); return;
+  }
   if (req.url.startsWith('/api/')) {
     handleAPI(req, res).catch(e => {
       if (!res.headersSent) json(res, 500, { code: -1, message: e.message });
@@ -353,18 +386,34 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  const INDEX = 'index.html';
-  let filePath = path.join(__dirname, req.url === '/' ? INDEX : req.url.split('?')[0]);
-  if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) filePath = path.join(__dirname, INDEX);
-
+  let pathname;
+  try { pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname); }
+  catch { res.writeHead(400); res.end('Bad request'); return; }
+  // Only ship public assets, never source, dependencies, or credentials.
+  const publicFile = pathname === '/' || pathname === '/index.html' ||
+    /^\/(?:js|assets)\/[a-zA-Z0-9_.\/-]+$/.test(pathname);
+  if (!publicFile || pathname.split('/').some(part => part.startsWith('.'))) {
+    res.writeHead(404); res.end('Not found'); return;
+  }
+  const filePath = path.resolve(__dirname, '.' + (pathname === '/' ? '/index.html' : pathname));
+  if (!filePath.startsWith(__dirname + path.sep) || !fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
+    res.writeHead(404); res.end('Not found'); return;
+  }
   res.writeHead(200, { 'Content-Type': MIME[path.extname(filePath)] || 'application/octet-stream' });
-  fs.createReadStream(filePath).pipe(res);
+  fs.createReadStream(filePath).on('error', () => res.destroy()).pipe(res);
 });
 
-server.listen(PORT, () => {
+function startServer() {
+server.listen(Number(PORT), HOST, () => {
   const albums = ARTISTS.reduce((n, a) => n + a.albums.length, 0);
-  console.log('Server: http://localhost:' + PORT);
+  console.log('Server: http://' + HOST + ':' + server.address().port);
   console.log('艺人 ' + ARTISTS.length + ' 位 · 专辑 ' + albums + ' 张（来自 artists.json）');
   if (PROXY) console.log('代理：' + PROXY);
   console.log('登录态：按访客隔离（Cookie 存在各人浏览器里，服务端不落盘）');
 });
+
+return server;
+}
+
+if (require.main === module) startServer();
+module.exports = { startServer };

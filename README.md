@@ -4,6 +4,8 @@
 
 一个跑在浏览器里的 3D 黑胶唱片架音乐播放器。前端是手写的 Three.js 场景 + 原生 ES Module，**没有任何构建步骤**；后端是一个零框架的 Node 服务，只负责代理网易云 API、匹配高清封面。
 
+同一套代码既能部署成网页，也能打包成 **macOS 桌面应用**（Electron）—— 桌面版把服务跑在本机 `127.0.0.1` 上，自带进程隔离、随机请求令牌和同源封面代理，见[桌面版](#桌面版)。
+
 内置 **30 位说唱 / R&B 艺人**、**156 张正式录音室专辑**。
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Justinchengpepe/music-player)
@@ -72,6 +74,7 @@
 
 | 方式 | 适合谁 | 代价 |
 |---|---|---|
+| **桌面应用** | 不想开终端，想要个能双击的 App | 下载 [Releases](https://github.com/Justinchengpepe/music-player/releases/latest) 里的压缩包解压即用 |
 | **Codespaces 云端运行** | 只想看看效果，或想改点代码试试 | 一个 GitHub 账号，零安装 |
 | **本地运行** | 想长期自己用，想加自己的歌手 | 装 Node.js 18+（推荐 22） |
 | **部署到公网** | 想让别人点个链接就能用 | 一台服务器，或一个 Railway 账号 |
@@ -139,6 +142,44 @@ npm start
 
 ---
 
+## 桌面版
+
+同一套前端 + 后端，外面套一层 Electron 外壳。不想开终端就直接去
+[Releases](https://github.com/Justinchengpepe/music-player/releases/latest)
+下载压缩包，解压后双击 `Vinyl Archive.app`。
+
+从源码跑：
+
+```bash
+npm install
+npm run desktop
+```
+
+`desktop/` 里只有两个文件，职责很窄：
+
+| 文件 | 干什么 |
+|---|---|
+| `main.cjs` | Electron 主进程：生成随机令牌 → `utilityProcess.fork` 起后端 → 拿到端口后开窗口 |
+| `backend.cjs` | 后端启动器：`require('../server')` 起服务，把端口回传给主进程 |
+
+窗口的安全配置全部收紧：`nodeIntegration: false` + `contextIsolation: true` + `sandbox: true`，
+拒绝一切权限请求，并拦截所有跳出本机 origin 的导航。后端跑在独立进程里，随主进程退出而回收。
+
+桌面版比网页版只多三件事：
+
+| | 网页版 | 桌面版 |
+|---|---|---|
+| 渲染进程 | 普通浏览器 | 沙箱窗口，拿不到 `require` |
+| 封面图 | 浏览器直连 CDN | 走 `/api/cover` 同源代理，绕开跨域 |
+| API 鉴权 | 无 | 每个请求带 `X-Vinyl-Desktop` 令牌 |
+
+令牌由主进程启动时随机生成，只在 Electron 进程树里传递；`server.js` 只在检测到
+`VINYL_DESKTOP_TOKEN` 环境变量时才校验，**所以网页版部署完全不受影响**。
+
+> 只想跑网页版的话，`npm install --omit=dev` 可以跳过 Electron（约 100MB）。
+
+---
+
 ## 功能
 
 - **3D 唱片墙** —— Three.js 渲染的封面墙，悬停高亮、点击翻面、镜头推进
@@ -147,6 +188,7 @@ npm start
 - **曲目面板** —— 侧滑面板展示曲目，播放中高亮、进度条拖拽、播放 / 暂停
 - **双主题** —— 亮色 / 暗色一键切换；背景与控件主色由当前艺人推导（选中专辑后改用专辑色）
 - **移动端适配** —— 响应式布局，窄屏下曲目面板自动改为底部抽屉
+- **全库搜索** —— `⌘K` / `Ctrl K` 唤出搜索面板，直接查网易云全库的艺人与专辑，支持分页加载
 - **一行命令加歌手** —— `npm run add-artist "歌手名"` 自动补齐 ID、专辑、封面、头像、主题色
 - **扫码登录** —— 二维码登录网易云账号，解锁 999kbps 高码率播放
 - **封面自动匹配** —— iTunes Lookup API 按专辑名归一化匹配 600×600 高清封面，网易云封面兜底
@@ -158,16 +200,22 @@ npm start
 ```
 .
 ├── index.html             # ★ 唯一页面：3D 唱片架 + 曲目面板 + 歌词场景
-├── server.js              # Node 服务：静态文件 + API 代理 + MusicKit 签名
+├── server.js              # Node 服务：静态文件 + API 代理 + MusicKit 签名 + 封面代理
 ├── artists.json           # ★ 艺人数据，唯一来源。加歌手只改这个文件
+├── desktop/               # Electron 桌面版外壳
+│   ├── main.cjs           #   主进程：起后端、开沙箱窗口、注入请求令牌
+│   ├── backend.cjs        #   后端启动器：复用根目录的 server.js
+│   └── package.json       #   Electron 入口声明
 ├── lib/
-│   ├── music.js           # 专辑名归一化、版本标记判断、主题色推导（纯函数）
+│   ├── music.js           # 专辑名归一化、版本标记判断、录音室专辑筛选、主题色推导（纯函数）
 │   └── sources.js         # 网易云 / iTunes 数据源封装
 ├── scripts/
 │   └── add-artist.js      # 命令行加歌手工具
 ├── js/
-│   └── three.module.js    # Three.js r160 运行时（本地内置，不走 CDN）
-├── assets/                # README 配图
+│   ├── three.module.js    # Three.js r160 运行时（本地内置，不走 CDN）
+│   ├── archive-search.js  # ⌘K 全库搜索面板（原生 ES Module）
+│   └── carousel-layout.mjs# 唱片架环形排布算法（半径随张数自适应）
+├── assets/                # README 配图 + 搜索面板样式
 ├── docs/                  # GitHub Pages 展示页（纯静态，与播放器无关）
 ├── .devcontainer/         # Codespaces 配置：devcontainer.json + start.sh
 ├── deploy.sh              # Ubuntu / Oracle Cloud 一键部署脚本
@@ -271,7 +319,9 @@ npm run add-artist --list                              # 列出当前所有艺�
 | 变量 | 默认值 | 说明 |
 |---|---|---|
 | `PORT` | `8088` | 服务监听端口 |
+| `HOST` | `0.0.0.0` | 监听地址。桌面版由主进程设为 `127.0.0.1`，只对本机开放 |
 | `NETEASE_PROXY` | 无 | 网易云 API 请求代理地址，海外服务器部署时建议设置 |
+| `VINYL_DESKTOP_TOKEN` | 无 | 桌面版请求令牌。**只有设了它才启用鉴权**，网页版不用管 |
 
 ```bash
 PORT=3000 NETEASE_PROXY=http://127.0.0.1:7890 npm start
@@ -306,7 +356,8 @@ cp musickit.example.json musickit.json
 | GET | `/api/album?id=<专辑ID>` | 专辑详情与曲目列表 |
 | GET | `/api/song/url?id=<歌曲ID>` | 歌曲播放地址（带 Cookie 时返回 999kbps） |
 | GET | `/api/lyric?id=<歌曲ID>` | 歌词 |
-| GET | `/api/search?keywords=<关键词>&type=1` | 搜索 |
+| GET | `/api/search?keywords=<关键词>&type=1&offset=0` | 搜索，支持分页。`type=100` 查艺人、`type=10` 查专辑 |
+| GET | `/api/cover?url=<图片地址>` | 同源封面代理，只放行网易云与 `mzstatic.com` 的 https 图片，供桌面版沙箱窗口使用 |
 | GET | `/api/login/qr/key` | 生成登录二维码 |
 | GET | `/api/login/qr/check?key=<key>` | 轮询扫码状态。`code=803` 时**在响应里返回 `cookie` 与 `nickname`**，由前端自行保存 |
 | GET | `/api/login/status` | 查询当前登录状态（读请求头，现查一次） |

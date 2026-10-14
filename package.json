@@ -1,10 +1,11 @@
 {
   "name": "vinyl-archive",
   "version": "1.0.0",
-  "description": "3D 黑胶唱片架音乐播放器 —— Three.js 前端 + 零框架 Node 服务端，无构建步骤",
+  "description": "3D 黑胶唱片架音乐播放器 —— Three.js 前端 + 零框架 Node 服务端，可网页部署，也可打包成 Electron 桌面应用",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "desktop": "electron desktop",
     "add-artist": "node scripts/add-artist.js"
   },
   "keywords": [
@@ -14,7 +15,9 @@
     "vinyl",
     "netease-cloud-music",
     "vanilla-js",
-    "no-build"
+    "no-build",
+    "electron",
+    "desktop-app"
   ],
   "engines": {
     "node": ">=18"
@@ -29,5 +32,8 @@
   "dependencies": {
     "jsonwebtoken": "^9.0.3",
     "NeteaseCloudMusicApi": "^4.31.0"
+  },
+  "devDependencies": {
+    "electron": "^44.7.2"
   }
 }
