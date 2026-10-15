@@ -21,7 +21,9 @@ function finish(code) {
 const timer = setTimeout(() => {
   console.error('Packaged application smoke test timed out');
   child.kill('SIGKILL'); finish(1);
-}, 90000);
+// A fresh hosted Mac must translate Electron's Intel helpers on first launch.
+// Allow that cold Rosetta start to finish before checking the rendered app.
+}, process.platform === 'darwin' && process.arch === 'arm64' && arch === 'x64' ? 300000 : 90000);
 child.stdout.on('data', chunk => { output += chunk; process.stdout.write(chunk); });
 child.stderr.on('data', chunk => process.stderr.write(chunk));
 child.on('error', error => { console.error(error.message); finish(1); });
