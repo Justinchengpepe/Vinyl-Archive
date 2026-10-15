@@ -25,3 +25,5 @@ Mac 同时提供 ZIP；`SHA256SUMS.txt` 包含所有安装包的校验值。安�
 - 统一播放控制：网易云可按账号权益播放；Apple Music 与 Spotify 需要开发者配置和平台授权，QQ 音乐目前为独立官方网页会话，不能视为四平台完整播放聚合。
 
 网页版的运行方式和平台限制见 [README](https://github.com/Justinchengpepe/music-player#readme)。
+
+构建验证：Windows 与 Apple 芯片版本原生启动检查；Intel 二进制通过 Rosetta 启动检查。

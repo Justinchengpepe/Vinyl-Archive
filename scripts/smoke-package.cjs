@@ -8,9 +8,6 @@ const executable = process.platform === 'win32'
   : path.resolve('dist', folder, 'Vinyl Archive.app', 'Contents', 'MacOS', 'Vinyl Archive');
 if (!fs.existsSync(executable)) throw new Error('Packaged application missing: ' + executable);
 const args = ['--smoke-test'];
-// Hosted Intel Mac runners have no usable hardware EGL display. Keep this
-// software driver override inside the CI test launcher, never the shipped app.
-if (process.env.CI && process.platform === 'darwin' && arch === 'x64') args.push('--use-gl=angle', '--use-angle=swiftshader');
 const child = spawn(executable, args, { env: process.env, stdio: ['ignore', 'pipe', 'pipe'] });
 let output = '', done = false;
 const timer = setTimeout(() => { child.kill(); console.error('Packaged application smoke test timed out'); process.exitCode = 1; }, 90000);

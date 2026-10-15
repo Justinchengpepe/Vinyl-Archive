@@ -99,7 +99,7 @@ npm run build:mac:dir        # 仅生成本机 Mac .app，供调试
 
 ### 自动发布
 
-[GitHub Actions](https://github.com/Justinchengpepe/music-player/actions/workflows/release.yml) 会先运行测试，再分别在 Windows、Apple 芯片 Mac、Intel Mac 上打包并验证应用启动。三个平台全部通过后，才生成校验值并发布到 GitHub Releases。
+[GitHub Actions](https://github.com/Justinchengpepe/music-player/actions/workflows/release.yml) 会先运行测试，再分别生成 Windows、Apple 芯片 Mac、Intel Mac 安装包并验证应用启动。Intel 二进制在预装 Rosetta 的 Apple 芯片运行器上验证，避免云端 Intel 虚拟显卡无法启动 WebGL。三个平台全部通过后，才生成校验值并发布到 GitHub Releases。
 
 后续发布：更新 `package.json`、`package-lock.json` 中的版本号与 `RELEASE_NOTES.md`，推送到 `main`。也可从 Actions 手动运行同一工作流。安装包不提交到源码仓库。
 

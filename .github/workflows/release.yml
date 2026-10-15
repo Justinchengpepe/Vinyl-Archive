@@ -38,14 +38,19 @@ jobs:
       matrix:
         include:
           - os: windows-latest
+            nodeArch: x64
             arch: x64
             target: win
             script: build:win
           - os: macos-15
+            nodeArch: arm64
             arch: arm64
             target: mac-arm64
             script: build:mac:arm64
-          - os: macos-15-intel
+          # The Apple runner has graphics support and preinstalled Rosetta.
+          # Build an Intel binary, then run that exact binary under Rosetta.
+          - os: macos-15
+            nodeArch: arm64
             arch: x64
             target: mac-x64
             script: build:mac:x64
@@ -56,8 +61,11 @@ jobs:
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: '22'
-          architecture: ${{ matrix.arch }}
+          architecture: ${{ matrix.nodeArch }}
           cache: npm
+      - name: Verify Intel runtime is available
+        if: matrix.target == 'mac-x64'
+        run: arch -x86_64 /usr/bin/true
       - run: npm ci
       - run: npm run ${{ matrix.script }}
         env:
