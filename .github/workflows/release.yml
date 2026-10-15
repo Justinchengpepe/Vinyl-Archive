@@ -6,6 +6,8 @@ on:
     paths:
       - package.json
       - .github/workflows/release.yml
+      - scripts/smoke-package.cjs
+      - scripts/release-checksums.cjs
 permissions:
   contents: read
 concurrency:
