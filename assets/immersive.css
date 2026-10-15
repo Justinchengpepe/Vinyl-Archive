@@ -1,0 +1,4 @@
+body.lyr-open #topbar,#lyric-scene.on .lyr-close,#lyric-scene.on .lyr-controls,#lyric-scene.on .lyr-progress,#lyric-scene.on .lyr-album-card,#lyric-scene.on .lyr-now{transition:opacity .45s ease}
+body.immersed #topbar,body.immersed #lyric-scene.on .lyr-close,body.immersed #lyric-scene.on .lyr-controls,body.immersed #lyric-scene.on .lyr-progress,body.immersed #lyric-scene.on .lyr-album-card,body.immersed #lyric-scene.on .lyr-now{opacity:0;pointer-events:none;transition-delay:0s}
+body.immersed #lyric-scene{cursor:none}
+@media(prefers-reduced-motion:reduce){body.lyr-open #topbar,#lyric-scene.on .lyr-close,#lyric-scene.on .lyr-controls,#lyric-scene.on .lyr-progress,#lyric-scene.on .lyr-album-card,#lyric-scene.on .lyr-now{transition:none}}

@@ -1,12 +1,20 @@
 {
   "name": "vinyl-archive",
-  "version": "1.0.0",
-  "description": "3D 黑胶唱片架音乐播放器 —— Three.js 前端 + 零框架 Node 服务端，可网页部署，也可打包成 Electron 桌面应用",
-  "main": "server.js",
+  "version": "1.1.0",
+  "description": "黑胶唱片风格音乐播放器，支持 Windows、macOS 与网页部署",
+  "main": "desktop/main.cjs",
   "scripts": {
     "start": "node server.js",
-    "desktop": "electron desktop",
-    "add-artist": "node scripts/add-artist.js"
+    "add-artist": "node scripts/add-artist.js",
+    "desktop": "electron .",
+    "desktop:smoke": "electron . --smoke-test",
+    "build:mac": "electron-builder --mac dmg zip --publish never",
+    "test": "node --test tests/*.test.cjs",
+    "build:mac:arm64": "electron-builder --mac dmg zip --arm64 --publish never",
+    "build:mac:x64": "electron-builder --mac dmg zip --x64 --publish never",
+    "build:win": "electron-builder --win nsis --x64 --publish never",
+    "build:mac:dir": "electron-builder --mac dir --publish never",
+    "desktop:smoke:package": "node scripts/smoke-package.cjs"
   },
   "keywords": [
     "three.js",
@@ -15,9 +23,7 @@
     "vinyl",
     "netease-cloud-music",
     "vanilla-js",
-    "no-build",
-    "electron",
-    "desktop-app"
+    "no-build"
   ],
   "engines": {
     "node": ">=18"
@@ -26,14 +32,72 @@
     "type": "git",
     "url": "https://github.com/Justinchengpepe/music-player.git"
   },
-  "author": "",
+  "author": "Justinchengpepe",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
     "jsonwebtoken": "^9.0.3",
     "NeteaseCloudMusicApi": "^4.31.0"
   },
+  "build": {
+    "appId": "com.vinylarchive.player",
+    "productName": "Vinyl Archive",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "desktop/**",
+      "index.html",
+      "server.js",
+      "lib/**",
+      "artists.json",
+      "js/**",
+      "assets/**",
+      "!assets/*.png",
+      "package.json",
+      "LICENSE"
+    ],
+    "asarUnpack": [
+      "node_modules/NeteaseCloudMusicApi/**"
+    ],
+    "mac": {
+      "category": "public.app-category.music",
+      "identity": null,
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "build/icon.icns",
+      "minimumSystemVersion": "13.0"
+    },
+    "artifactName": "Vinyl-Archive-${version}-${os}-${arch}.${ext}",
+    "compression": "normal",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Vinyl Archive"
+    },
+    "dmg": {
+      "title": "Vinyl Archive ${version}"
+    }
+  },
   "devDependencies": {
-    "electron": "^44.7.2"
+    "electron": "^44.7.2",
+    "electron-builder": "^26.15.3",
+    "jsdom": "^30.1.2"
   }
 }

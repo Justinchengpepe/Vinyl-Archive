@@ -1,8 +1,8 @@
 {
   "name": "vinyl-archive-desktop",
   "productName": "Vinyl Archive",
-  "version": "1.0.0",
-  "description": "Vinyl Archive 的 Electron 外壳：拉起本地 Node 服务，再用 BrowserWindow 加载它",
+  "version": "1.1.0",
+  "description": "Vinyl Archive 桌面入口",
   "main": "main.cjs",
   "private": true
 }

@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const netease = require('NeteaseCloudMusicApi');
 const { normName, hasVariantMarker, colorFromName, selectStudioAlbums } = require('./lib/music');
 const { fetchArtistAlbums, resolveItunesArtistId, resolveAvatar, fetchITunesAlbumMap } = require('./lib/sources');
+const { createLyricsService } = require('./lib/lyrics');
 
 // ═══════════════════════════════════════════
 //  配置
@@ -12,9 +13,11 @@ const { fetchArtistAlbums, resolveItunesArtistId, resolveAvatar, fetchITunesAlbu
 const PORT = process.env.PORT || 8088;
 const HOST = process.env.HOST || '0.0.0.0';
 const PROXY = process.env.NETEASE_PROXY || undefined;
+const getLyrics = createLyricsService({ primary: params => netease.lyric({ ...params, proxy: PROXY }), fallback: params => netease.lyric_new({ ...params, proxy: PROXY }) });
 
 const ARTISTS_FILE = path.join(__dirname, 'artists.json');
-const MUSICKIT_FILE = path.join(__dirname, 'musickit.json');
+const CONFIG_DIR = process.env.VINYL_CONFIG_DIR || __dirname;
+const MUSICKIT_FILE = path.join(CONFIG_DIR, 'musickit.json');
 const MIME = {
   '.html': 'text/html', '.js': 'application/javascript', '.mjs': 'application/javascript',
   '.css': 'text/css', '.json': 'application/json', '.png': 'image/png',
@@ -42,6 +45,9 @@ function cookieOf(req) {
 // Apple MusicKit 配置
 let mkConfig = { teamId: '', keyId: '', privateKey: '' };
 try { mkConfig = JSON.parse(fs.readFileSync(MUSICKIT_FILE, 'utf8')); } catch (e) {}
+let servicesConfig = {};
+try { servicesConfig = JSON.parse(fs.readFileSync(path.join(CONFIG_DIR, 'music-services.json'), 'utf8')); } catch {}
+function musicKitReady() { return !!(mkConfig.teamId && mkConfig.teamId !== 'YOUR_TEAM_ID' && mkConfig.keyId && mkConfig.keyId !== 'YOUR_KEY_ID' && mkConfig.privateKey?.includes('-----BEGIN PRIVATE KEY-----') && !mkConfig.privateKey.includes('YOUR_KEY_HERE')); }
 
 // ═══════════════════════════════════════════
 //  艺人数据 —— 唯一来源 artists.json
@@ -191,6 +197,12 @@ async function handleAPI(req, res) {
   const url = new URL(req.url, 'http://localhost:' + PORT);
   const route = url.pathname;
 
+  if (route === '/api/accounts/config') {
+    res.setHeader('Cache-Control', 'no-store');
+    json(res, 200, { apple: { configured: musicKitReady() }, spotify: { clientId: process.env.SPOTIFY_CLIENT_ID || servicesConfig.spotify?.clientId || '' } });
+    return;
+  }
+
   // Same-origin album textures for the sandboxed desktop renderer.
   if (route === '/api/cover') {
     let target;
@@ -266,7 +278,9 @@ async function handleAPI(req, res) {
     if (!id) { res.writeHead(400); res.end('Missing id'); return; }
     try {
       const ck = cookieOf(req);
-      const result = await netease.song_url({
+      let result;
+      try { result = await netease.song_url_v1({ id, level: ck ? 'exhigh' : 'standard', cookie: ck || undefined, proxy: PROXY }); } catch {}
+      if (!result?.body?.data?.some(item => item.url)) result = await netease.song_url({
         id,
         br: ck ? 999000 : 320000,
         cookie: ck || undefined,
@@ -282,12 +296,11 @@ async function handleAPI(req, res) {
   // 歌词
   if (route === '/api/lyric') {
     const id = url.searchParams.get('id');
-    if (!id) { res.writeHead(400); res.end('Missing id'); return; }
+    if (!id || !/^\d+$/.test(id)) { json(res, 400, { message: 'Invalid song id' }); return; }
     try {
-      const result = await netease.lyric({ id, cookie: cookieOf(req) || undefined, proxy: PROXY });
-      json(res, 200, result.body);
+      json(res, 200, await getLyrics(id, cookieOf(req) || undefined));
     } catch (e) {
-      json(res, 500, { code: -1, message: e.message });
+      json(res, 502, { code: -1, message: '歌词暂时无法获取，请重试' });
     }
     return;
   }
@@ -351,7 +364,8 @@ async function handleAPI(req, res) {
 
   // MusicKit Developer Token
   if (route === '/api/musickit/token') {
-    if (!mkConfig.teamId || mkConfig.teamId === 'YOUR_TEAM_ID') {
+    res.setHeader('Cache-Control', 'no-store');
+    if (!musicKitReady()) {
       json(res, 200, { error: 'Configure musickit.json' });
       return;
     }

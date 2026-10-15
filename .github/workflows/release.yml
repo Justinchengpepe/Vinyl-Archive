@@ -1,0 +1,102 @@
+name: Build and release desktop apps
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - package.json
+      - .github/workflows/release.yml
+permissions:
+  contents: read
+concurrency:
+  group: desktop-release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      - run: npm test
+      - id: version
+        run: node -e "require('fs').appendFileSync(process.env.GITHUB_OUTPUT, 'version=' + require('./package.json').version + '\n')"
+  build:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            arch: x64
+            target: win
+            script: build:win
+          - os: macos-15
+            arch: arm64
+            target: mac-arm64
+            script: build:mac:arm64
+          - os: macos-15-intel
+            arch: x64
+            target: mac-x64
+            script: build:mac:x64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+          architecture: ${{ matrix.arch }}
+          cache: npm
+      - run: npm ci
+      - run: npm run ${{ matrix.script }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Verify packaged app starts
+        run: npm run desktop:smoke:package -- ${{ matrix.arch }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: packages-${{ matrix.target }}
+          path: |
+            dist/*.exe
+            dist/*.dmg
+            dist/*.zip
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+  publish:
+    needs: [test, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: packages-*
+          merge-multiple: true
+          path: release
+      - run: node scripts/release-checksums.cjs release
+      - name: Publish installers after every platform passes
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ needs.test.outputs.version }}
+        run: |
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --draft --title "Vinyl Archive $TAG — Windows & macOS" --notes-file RELEASE_NOTES.md
+          fi
+          gh release upload "$TAG" release/* --repo "$GITHUB_REPOSITORY" --clobber
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest --notes-file RELEASE_NOTES.md

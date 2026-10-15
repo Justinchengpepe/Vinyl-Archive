@@ -1,0 +1,38 @@
+/* Original vinyl launch composition; shared by the renderer and native cold start. */
+#startup{--boot-paper:#f5f4f0;--boot-ink:#22211f;--boot-muted:#77756f;position:fixed;inset:0;z-index:10000;display:grid;place-items:center;background:var(--boot-paper);color:var(--boot-ink);overflow:hidden;isolation:isolate;opacity:1;transition:opacity .6s cubic-bezier(.22,1,.36,1);font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif}
+#startup::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(ellipse 42% 38% at 50% 47%,#fff9,transparent);pointer-events:none}
+.boot-composition{display:flex;flex-direction:column;align-items:center;transform:translateY(-12px);gap:34px}
+.boot-object{position:relative;width:224px;height:224px;display:grid;place-items:center;perspective:900px;animation:boot-arrive 1.1s cubic-bezier(.16,1,.3,1) both}
+.boot-shadow{position:absolute;width:154px;height:25px;bottom:-9px;border-radius:50%;background:#25211c1c;filter:blur(15px);transform:scaleY(.45);animation:boot-shadow-in 1.2s ease both}
+.boot-sleeve{position:absolute;width:174px;height:174px;left:1px;top:28px;border-radius:3px;background:linear-gradient(135deg,#fffefa,#eeece4);border:1px solid #29251e12;box-shadow:0 2px 3px #241c0e05,0 15px 28px #241c0e0c;transform:rotate(-9deg);animation:boot-sleeve-in 1.2s cubic-bezier(.16,1,.3,1) both}
+.boot-sleeve:before{content:"";position:absolute;inset:12px;border:1px solid #9d97791c;border-radius:50%}
+.boot-sleeve:after{content:"VA";position:absolute;bottom:10px;left:12px;font-size:8px;letter-spacing:2px;color:#8b8471}
+.boot-record{position:relative;width:184px;height:184px;margin-left:27px;border-radius:50%;background:repeating-radial-gradient(circle at 50% 50%,#16171a 0px,#16171a .6px,#252629 .9px,#111214 1.45px,#141518 2.2px);border:1px solid #414244;box-shadow:inset 0 0 0 3px #111214,0 2px 3px #0003,8px 18px 24px #0002;animation:boot-record-in 1.35s cubic-bezier(.16,1,.3,1) both}
+.boot-record:before{content:"";position:absolute;inset:4px;border-radius:50%;background:conic-gradient(from 15deg,transparent 0deg,#fff0 42deg,#fff2 70deg,#fff0 100deg,transparent 204deg,#fff1 245deg,transparent 275deg);animation:boot-sheen 5.4s ease-in-out infinite alternate;mix-blend-mode:screen}
+.boot-record:after{content:"";position:absolute;inset:28%;border:1px solid #ffffff12;border-radius:50%}
+.boot-label{position:absolute;inset:34%;display:flex;align-items:center;justify-content:center;flex-direction:column;border-radius:50%;background:radial-gradient(circle at 35% 30%,#e4d6b6,#c4ae7d);box-shadow:0 0 0 6px #151518,0 0 0 7px #ffffff0b;animation:boot-turn 4.8s linear infinite;color:#4f4533;overflow:hidden}
+.boot-label:before{content:"VINYL";position:absolute;top:9px;font-size:5px;letter-spacing:2px;margin-left:2px;font-weight:600}
+.boot-label:after{content:"ARCHIVE";position:absolute;bottom:9px;font-size:4px;letter-spacing:1.5px;margin-left:1.5px}
+.boot-hole{width:5px;height:5px;background:var(--boot-paper);border-radius:50%;box-shadow:0 0 0 1px #5d503b55}
+.boot-wordmark{font-size:11px;font-weight:500;line-height:1.4;letter-spacing:4.2px;margin-left:4.2px;animation:boot-type-in 1s .2s both}
+.boot-pulse{width:28px;height:1px;border-radius:1px;background:#9f9173;margin-top:-18px;animation:boot-breathe 2s .25s ease-in-out infinite;transform-origin:center}
+.boot-feedback{max-width:270px;text-align:center;position:absolute;top:calc(50% + 190px);left:50%;transform:translateX(-50%);font-size:12px;line-height:1.6;color:var(--boot-muted)}
+.boot-feedback:empty{display:none}
+.boot-retry{display:block;margin:14px auto 0;padding:10px 20px;border:1px solid #817d6f30;border-radius:20px;background:#ffffff88;color:var(--boot-ink);font:inherit;cursor:pointer;min-height:40px}
+.boot-retry:hover{background:#fff}.boot-retry:focus-visible{outline:2px solid #9f9173;outline-offset:4px}
+#startup[data-state=leaving]{opacity:0;pointer-events:none}
+#startup[data-state=leaving] .boot-composition{transform:translateY(-18px) scale(1.025);filter:blur(5px);opacity:0;transition:transform .65s cubic-bezier(.22,1,.36,1),filter .55s,opacity .45s}
+#startup[data-state=error] .boot-label,#startup[data-state=error] .boot-record:before,#startup[data-state=error] .boot-pulse{animation-play-state:paused}
+body.booting #app-shell{opacity:0;transition:opacity .65s ease}
+body.booting.boot-reveal #app-shell{opacity:1}
+body.booting{overflow:hidden}
+@keyframes boot-arrive{from{opacity:0;transform:translateY(20px) scale(.94)}to{opacity:1;transform:none}}
+@keyframes boot-sleeve-in{from{transform:translateX(12px) rotate(-4deg)}to{transform:translateX(0) rotate(-9deg)}}
+@keyframes boot-record-in{from{transform:translateX(-14px) rotate(-24deg)}to{transform:translateX(0) rotate(0)}}
+@keyframes boot-shadow-in{from{opacity:0;transform:scale(.7,.3)}to{opacity:1;transform:scale(1,.45)}}
+@keyframes boot-turn{to{transform:rotate(360deg)}}
+@keyframes boot-sheen{from{transform:rotate(-25deg);opacity:.55}to{transform:rotate(26deg);opacity:1}}
+@keyframes boot-type-in{from{opacity:0;transform:translateY(5px);letter-spacing:5px}to{opacity:1;transform:none;letter-spacing:4.2px}}
+@keyframes boot-breathe{0%,100%{opacity:.24;transform:scaleX(.45)}50%{opacity:.85;transform:scaleX(1)}}
+@media(max-width:480px){.boot-object{transform:scale(.88)}.boot-composition{gap:22px}.boot-feedback{top:calc(50% + 170px)}}
+@media(prefers-reduced-motion:reduce){#startup,#startup[data-state=leaving] .boot-composition,body.booting #app-shell{transition:none}.boot-object,.boot-shadow,.boot-sleeve,.boot-record,.boot-record:before,.boot-label,.boot-wordmark,.boot-pulse{animation:none}.boot-pulse{opacity:.5}#startup[data-state=leaving] .boot-composition{transform:none;filter:none}}

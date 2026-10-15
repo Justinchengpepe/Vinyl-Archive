@@ -1,0 +1,26 @@
+#intro{position:fixed;inset:0;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(var(--bar-h) + 26px) 24px 48px;background:var(--bg);overflow:hidden;isolation:isolate;transition:opacity .38s var(--ease),background .4s var(--ease);--portrait-width:250px;--portrait-height:290px}
+#intro.out{opacity:0;pointer-events:none}
+#intro:before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(ellipse 60% 48% at 50% 49%,var(--surface-2),transparent);pointer-events:none}
+.picker-a11y-title{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+.picker-stage{position:relative;width:calc(100% + 48px);flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:16px 0 24px;perspective:1400px}
+#artist-list{position:relative;width:100%;height:calc(var(--portrait-height) + 35px);perspective:1400px;touch-action:pan-y}
+.artist-item{position:absolute;top:0;left:50%;width:var(--portrait-width);height:var(--portrait-height);margin:0 0 0 calc(var(--portrait-width) / -2);border:0;padding:0;cursor:pointer;transform-style:preserve-3d;will-change:transform,opacity;border-radius:16px}
+.artist-avatar{display:block;position:relative;width:100%;height:100%;border-radius:16px;overflow:hidden;background:var(--surface-3);filter:grayscale(1) contrast(.92);box-shadow:0 8px 24px #00000009;transition:filter .35s ease,box-shadow .35s ease}
+.artist-avatar:after{content:"";position:absolute;inset:0;border:1px solid #00000008;border-radius:inherit;pointer-events:none}
+.artist-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;pointer-events:none}
+.artist-item.cur .artist-avatar{filter:grayscale(0) contrast(1);box-shadow:0 20px 45px #0000001c,0 2px 5px #00000008}
+.artist-item:hover .artist-avatar{filter:grayscale(.15)}
+.artist-initials{position:absolute;inset:0;display:grid;place-items:center;font-size:68px;letter-spacing:-4px;font-weight:500;color:var(--tx-2);background:linear-gradient(140deg,var(--surface-2),var(--surface-3))}
+.picker-selection{position:relative;text-align:center;flex-shrink:0;z-index:2;margin-top:5px}
+#flow-name{font-size:clamp(28px,3.3vw,42px);font-weight:550;letter-spacing:-1.6px;line-height:1.15;min-height:49px;max-width:90vw;margin:0;color:var(--tx);text-wrap:balance}
+.picker-actions{display:flex;align-items:center;justify-content:center;gap:24px;margin-top:23px}
+.picker-direction{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;background:var(--surface);color:var(--tx-2);transition:background .18s,color .18s}
+.picker-direction:hover{background:var(--surface-2);color:var(--tx)}
+.picker-actions svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+#picker-enter{min-height:44px;min-width:140px;padding:0 23px;display:flex;align-items:center;justify-content:center;gap:26px;border-radius:24px;background:var(--tx);color:var(--bg);font-size:12px;font-weight:500;transition:opacity .18s}
+#picker-enter:hover{opacity:.86}#picker-enter:disabled{opacity:.5;cursor:wait}
+#intro-hint{color:var(--tx-2);font-size:12px;letter-spacing:0;line-height:1.5;max-width:85%;text-align:center;margin-top:20px}#intro-hint:empty{display:none}
+[data-theme=dark] .artist-avatar:after{border-color:#ffffff0c}[data-theme=dark] .artist-item.cur .artist-avatar{box-shadow:0 22px 50px #0007}
+@media(max-height:700px) and (min-width:768px){.picker-stage{transform:scale(.86);margin-block:-22px}#flow-name{font-size:32px;min-height:38px}.picker-actions{margin-top:15px}}
+@media(max-width:767px){#intro{padding:calc(var(--bar-h) + 16px) 20px 44px}.picker-stage{width:calc(100% + 40px);padding:12px 0 18px}#artist-list{height:calc(var(--portrait-height) + 28px)}.artist-item,.artist-avatar{border-radius:13px}#flow-name{font-size:30px;min-height:38px;letter-spacing:-1.2px}.picker-actions{gap:22px;margin-top:20px}#picker-enter{min-width:140px}}
+@media(prefers-reduced-motion:reduce){#intro,.artist-avatar{transition:none!important}.artist-item{will-change:auto}.picker-stage,#artist-list{perspective:none}}

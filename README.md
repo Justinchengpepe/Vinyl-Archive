@@ -1,415 +1,135 @@
-# Vinyl Archive
+# Vinyl Archive · 黑胶馆
 
-**把唱片铺成一面墙，点开就能放。**
+以黑胶唱片为灵感的音乐播放器，支持 **Windows、macOS 与网页部署**。保留完整专辑封面，用悬停抽出、滑回胶套和原位翻面来浏览音乐。
 
-一个跑在浏览器里的 3D 黑胶唱片架音乐播放器。前端是手写的 Three.js 场景 + 原生 ES Module，**没有任何构建步骤**；后端是一个零框架的 Node 服务，只负责代理网易云 API、匹配高清封面。
+[下载桌面版](https://github.com/Justinchengpepe/music-player/releases/latest) · [网页版展示](https://justinchengpepe.github.io/music-player/) · [Codespaces 体验](https://codespaces.new/Justinchengpepe/music-player)
 
-同一套代码既能部署成网页，也能打包成 **macOS 桌面应用**（Electron）—— 桌面版把服务跑在本机 `127.0.0.1` 上，自带进程隔离、随机请求令牌和同源封面代理，见[桌面版](#桌面版)。
+## 下载与安装
 
-内置 **30 位说唱 / R&B 艺人**、**156 张正式录音室专辑**。
+桌面安装包自带运行环境，**不需要安装 Node.js 或打开终端**。
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Justinchengpepe/music-player)
+| 设备 | v1.1.0 下载 |
+|---|---|
+| Windows 10 / 11，Intel / AMD 64 位 | [Windows 安装程序 · EXE](https://github.com/Justinchengpepe/music-player/releases/download/v1.1.0/Vinyl-Archive-1.1.0-win-x64.exe) |
+| Apple 芯片 Mac（M 系列），macOS 13+ | [Apple 芯片 · DMG](https://github.com/Justinchengpepe/music-player/releases/download/v1.1.0/Vinyl-Archive-1.1.0-mac-arm64.dmg) · [ZIP](https://github.com/Justinchengpepe/music-player/releases/download/v1.1.0/Vinyl-Archive-1.1.0-mac-arm64.zip) |
+| Intel Mac，macOS 13+ | [Intel · DMG](https://github.com/Justinchengpepe/music-player/releases/download/v1.1.0/Vinyl-Archive-1.1.0-mac-x64.dmg) · [ZIP](https://github.com/Justinchengpepe/music-player/releases/download/v1.1.0/Vinyl-Archive-1.1.0-mac-x64.zip) |
 
-> **在线展示页** → <https://justinchengpepe.github.io/music-player/>
-> 这是项目的静态展示页，能看界面截图和用法说明；真正的播放器要跑 Node 服务，见下方[怎么跑起来](#怎么跑起来)。
+**Windows**：运行 EXE，按向导安装。关闭窗口会退出应用。
 
-![3D 唱片架](assets/shelf.png)
+**Mac**：打开 DMG，将 Vinyl Archive 拖入「应用程序」；或解压 ZIP 后移动 App。关闭窗口后继续播放，点击 Dock 图标可重开，`⌘Q` 完全退出。
 
----
+当前安装包没有商业代码签名，Mac 未做 Apple 公证，系统可能提示未知开发者。确认来自本仓库后，按系统提示操作；Mac 可在「系统设置 → 隐私与安全性」查看被拦截的应用。发布页提供 [SHA256SUMS.txt](https://github.com/Justinchengpepe/music-player/releases/download/v1.1.0/SHA256SUMS.txt)，可核对安装包校验值。
 
-## 界面一览
+## 界面
 
-<table>
-<tr>
-<td width="50%">
-<img src="assets/artist-picker.png" alt="选人界面">
-<p align="center"><sub>开场选人 · 艺人无限轮播，滚轮 / 滑动切换</sub></p>
-</td>
-<td width="50%">
-<img src="assets/album-panel.png" alt="专辑面板">
-<p align="center"><sub>曲目面板 · 播放中高亮 / 进度拖拽</sub></p>
-</td>
-</tr>
-<tr>
-<td width="50%">
-<img src="assets/lyrics.png" alt="黑胶歌词页">
-<p align="center"><sub>黑胶歌词页 · 唱针随进度由外圈移向内圈</sub></p>
-</td>
-<td width="50%">
-<img src="assets/panel-dark.png" alt="暗色主题">
-<p align="center"><sub>暗色主题 · 同一面板与歌单</sub></p>
-</td>
-</tr>
-<tr>
-<td width="50%">
-<img src="assets/accent-drake.png" alt="Drake 主色">
-<p align="center"><sub>Drake · 主色 <code>#4a90d9</code></sub></p>
-</td>
-<td width="50%">
-<img src="assets/accent-travisscott.png" alt="Travis Scott 主色">
-<p align="center"><sub>Travis Scott · 主色 <code>#a83232</code></sub></p>
-</td>
-</tr>
-<tr>
-<td width="50%">
-<p align="center"><img src="assets/artist-picker-mobile.png" width="46%" alt="移动端开场选人"></p>
-<p align="center"><sub>移动端 · 开场选人</sub></p>
-</td>
-<td width="50%">
-<p align="center"><img src="assets/mobile.png" width="46%" alt="移动端专辑轮播"></p>
-<p align="center"><sub>移动端 · 专辑轮播</sub></p>
-</td>
-</tr>
-</table>
+![黑胶馆：完整封面、轻薄胶套与微露黑胶](research/vinyl-subtle-rim.png)
 
-<p align="center"><sub>Drake / Travis Scott 两张是<strong>同一个界面</strong>切到不同艺人的效果 —— 3D 背景与控件配色都由艺人主色推导，选中专辑后改用专辑色。</sub></p>
+![黑胶与同步歌词](research/lyrics-restored-preview.png)
 
-<p align="center"><sub>移动端不是缩小版：顶栏压缩为图标按钮，曲目面板改为从底部滑出的抽屉（占 56% 视口高），唱片架支持触摸滑动。</sub></p>
+## 功能
 
----
+- **黑胶馆**：薄胶套保留完整封面，上沿微露黑胶；悬停抽出，移开滑回。选中专辑后，大封面原位翻面查看曲目。
+- **精选与全库搜索**：内置欧美说唱 / R&B 歌手精选；`⌘K` / `Ctrl+K` 搜索网易云歌手与专辑，搜索结果可重复选择。
+- **正式专辑筛选**：优先正式录音室专辑，排除单曲、EP、现场、混音、精选及重复版本；专辑较多时自动留出间距。
+- **流动背景**：从当前专辑封面提取配色，播放时缓慢流动；暂停后静止，尊重系统的减少动态效果设置。
+- **同步歌词**：时间轴高亮、滚动与重试，适配试听起始偏移。
+- **沉浸播放**：播放页闲置 4 秒后隐去控制，移动鼠标或触碰唤回；键盘操作、暂停和弹窗期间保持控制可见。
+- **启动动画、明暗主题与触屏布局**。
 
-## 怎么跑起来
+## 音乐来源与账号
 
-这个项目**不是静态网页**，必须有一个 Node 服务在跑。三种用法，按省事程度排：
+| 平台 | 当前可用范围 |
+|---|---|
+| 网易云音乐 | 扫码登录、曲库、歌词与按账号权益返回的播放地址；部分歌曲可能仅试听或不可播放 |
+| Apple Music | 已有账号入口与 MusicKit 适配；实际播放需要开发者配置、用户授权、订阅及受支持的播放环境 |
+| Spotify | 已有 PKCE 登录与设备控制适配；需要开发者应用、相应授权、Premium 和可用的活动设备 |
+| QQ 音乐 | 桌面版打开隔离的官方网页会话；当前没有本地播放适配 |
 
-| 方式 | 适合谁 | 代价 |
-|---|---|---|
-| **桌面应用** | 不想开终端，想要个能双击的 App | 下载 [Releases](https://github.com/Justinchengpepe/music-player/releases/latest) 里的压缩包解压即用 |
-| **Codespaces 云端运行** | 只想看看效果，或想改点代码试试 | 一个 GitHub 账号，零安装 |
-| **本地运行** | 想长期自己用，想加自己的歌手 | 装 Node.js 18+（推荐 22） |
-| **部署到公网** | 想让别人点个链接就能用 | 一台服务器，或一个 Railway 账号 |
+四个平台入口不代表四个平台都已完成本地播放聚合。默认自动播放使用本地可用来源，不会自动让 Spotify 在其他设备播放，也不会用公开试听冒充完整音源。
 
-### 方式一：Codespaces（零安装）
+账号保存在用户自己的浏览器或桌面应用数据中，不随安装包分发。开发者配置可参考 [music-services.example.json](music-services.example.json)；桌面配置位于应用用户数据目录，网页部署可在项目目录创建 `music-services.json`。不要提交账号 Cookie、私钥或实际配置文件。
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Justinchengpepe/music-player)
+## 网页版
 
-点按钮 → 等容器初始化（首次约 1–2 分钟，会自动跑 `npm install`）→ 服务自动启动，
-浏览器弹出 8088 端口预览，那就是完整可用的页面。
-
-> 服务冷启动要加载网易云模块，**首次约 30–60 秒**。如果预览打开时是报错页，
-> 等一分钟刷新一下就好。
-
-如果预览没自动弹出，在下方终端手动跑一次：
-
-```bash
-npm start
-```
-
-日常维护：
-
-```bash
-tail -f /tmp/vinyl-archive.log            # 看运行日志
-pkill -f 'node server.js' && npm start    # 重启
-```
-
-> 免费账号每月 120 核时额度，容器闲置 30 分钟自动休眠，重新打开会再拉起一次。
-> Codespaces 的机器在海外，网易云接口偶尔会慢 —— 加载不出来时可以设 `NETEASE_PROXY` 走代理。
-
-### 方式二：本地运行
+[GitHub Pages 展示页](https://justinchengpepe.github.io/music-player/) 展示界面与使用方式。真正播放需要 Node 服务，不能只把播放器 HTML 上传到静态托管。
 
 ```bash
 git clone https://github.com/Justinchengpepe/music-player.git
 cd music-player
-npm install
+npm ci
 npm start
 ```
 
-浏览器打开 **http://localhost:8088** 即可。
+浏览器打开 `http://localhost:8088`。仅部署网页时可使用 `npm ci --omit=dev`，无需下载 Electron。
 
-### 方式三：部署到公网
+也可点击 [Codespaces](https://codespaces.new/Justinchengpepe/music-player) 在云端运行。首次启动需要下载安装依赖与读取曲库，完成后从端口面板打开 8088。
 
-见下方 [部署](#部署) 章节。
+### 服务器部署
 
----
+仓库保留 [deploy.sh](deploy.sh) 与 [.railwayignore](.railwayignore)，可沿用已有 Ubuntu / PM2 或 Railway 部署。
 
-### 为什么不能部署到 GitHub Pages？
-
-**因为 GitHub 在这里的角色是「代码托管」，不是「运行环境」。**
-
-页面里那 11 个 `/api/*` 接口（艺人列表、专辑曲目、播放地址、歌词、扫码登录…）
-都必须由 `server.js` 在服务端转发给网易云 —— 浏览器直连会被 CORS 挡死。
-而 GitHub Pages 只会把 HTML / CSS / JS 原样发出去，**不执行任何 Node 代码**，
-所以传上去之后所有接口都会 404，页面直接白屏。
-
-同理，**直接双击 `index.html` 打开也会白屏**，它必须由 `server.js` 托管。
-
-想让别人点开链接就能用，得走上面的方式三。
-
-> 顺带一提：项目的[在线展示页](https://justinchengpepe.github.io/music-player/)确实挂在 GitHub Pages 上 ——
-> 因为它是纯静态的。但它只能展示截图和说明，点不动、放不了歌。
-
-> 首次启动要加载网易云模块（9MB / 400+ 文件），**冷启动约 30–60 秒属正常现象**。
-
----
-
-## 桌面版
-
-同一套前端 + 后端，外面套一层 Electron 外壳。不想开终端就直接去
-[Releases](https://github.com/Justinchengpepe/music-player/releases/latest)
-下载压缩包，解压后双击 `Vinyl Archive.app`。
-
-从源码跑：
-
-```bash
-npm install
-npm run desktop
-```
-
-`desktop/` 里只有两个文件，职责很窄：
-
-| 文件 | 干什么 |
+| 环境变量 | 说明 |
 |---|---|
-| `main.cjs` | Electron 主进程：生成随机令牌 → `utilityProcess.fork` 起后端 → 拿到端口后开窗口 |
-| `backend.cjs` | 后端启动器：`require('../server')` 起服务，把端口回传给主进程 |
+| `PORT` | 网页监听端口，默认 `8088` |
+| `HOST` | 网页默认 `0.0.0.0`；桌面版固定为 `127.0.0.1` |
+| `NETEASE_PROXY` | 可选的网易云接口请求代理 |
+| `VINYL_DESKTOP_TOKEN` | 桌面进程自动生成的本地请求令牌，网页部署不需要设置 |
 
-窗口的安全配置全部收紧：`nodeIntegration: false` + `contextIsolation: true` + `sandbox: true`，
-拒绝一切权限请求，并拦截所有跳出本机 origin 的导航。后端跑在独立进程里，随主进程退出而回收。
+## 从源码开发与打包
 
-桌面版比网页版只多三件事：
-
-| | 网页版 | 桌面版 |
-|---|---|---|
-| 渲染进程 | 普通浏览器 | 沙箱窗口，拿不到 `require` |
-| 封面图 | 浏览器直连 CDN | 走 `/api/cover` 同源代理，绕开跨域 |
-| API 鉴权 | 无 | 每个请求带 `X-Vinyl-Desktop` 令牌 |
-
-令牌由主进程启动时随机生成，只在 Electron 进程树里传递；`server.js` 只在检测到
-`VINYL_DESKTOP_TOKEN` 环境变量时才校验，**所以网页版部署完全不受影响**。
-
-> 只想跑网页版的话，`npm install --omit=dev` 可以跳过 Electron（约 100MB）。
-
----
-
-## 功能
-
-- **3D 唱片墙** —— Three.js 渲染的封面墙，悬停高亮、点击翻面、镜头推进
-- **黑胶歌词页** —— 独立场景，唱针随播放进度从外圈移向内圈，歌词逐行高亮
-- **艺人切换** —— 开场是无限循环的艺人轮播，滚轮 / 滑动 / 点击均可切换
-- **曲目面板** —— 侧滑面板展示曲目，播放中高亮、进度条拖拽、播放 / 暂停
-- **双主题** —— 亮色 / 暗色一键切换；背景与控件主色由当前艺人推导（选中专辑后改用专辑色）
-- **移动端适配** —— 响应式布局，窄屏下曲目面板自动改为底部抽屉
-- **全库搜索** —— `⌘K` / `Ctrl K` 唤出搜索面板，直接查网易云全库的艺人与专辑，支持分页加载
-- **一行命令加歌手** —— `npm run add-artist "歌手名"` 自动补齐 ID、专辑、封面、头像、主题色
-- **扫码登录** —— 二维码登录网易云账号，解锁 999kbps 高码率播放
-- **封面自动匹配** —— iTunes Lookup API 按专辑名归一化匹配 600×600 高清封面，网易云封面兜底
-
----
-
-## 目录结构
-
-```
-.
-├── index.html             # ★ 唯一页面：3D 唱片架 + 曲目面板 + 歌词场景
-├── server.js              # Node 服务：静态文件 + API 代理 + MusicKit 签名 + 封面代理
-├── artists.json           # ★ 艺人数据，唯一来源。加歌手只改这个文件
-├── desktop/               # Electron 桌面版外壳
-│   ├── main.cjs           #   主进程：起后端、开沙箱窗口、注入请求令牌
-│   ├── backend.cjs        #   后端启动器：复用根目录的 server.js
-│   └── package.json       #   Electron 入口声明
-├── lib/
-│   ├── music.js           # 专辑名归一化、版本标记判断、录音室专辑筛选、主题色推导（纯函数）
-│   └── sources.js         # 网易云 / iTunes 数据源封装
-├── scripts/
-│   └── add-artist.js      # 命令行加歌手工具
-├── js/
-│   ├── three.module.js    # Three.js r160 运行时（本地内置，不走 CDN）
-│   ├── archive-search.js  # ⌘K 全库搜索面板（原生 ES Module）
-│   └── carousel-layout.mjs# 唱片架环形排布算法（半径随张数自适应）
-├── assets/                # README 配图 + 搜索面板样式
-├── docs/                  # GitHub Pages 展示页（纯静态，与播放器无关）
-├── .devcontainer/         # Codespaces 配置：devcontainer.json + start.sh
-├── deploy.sh              # Ubuntu / Oracle Cloud 一键部署脚本
-├── .railwayignore         # Railway 部署忽略规则
-├── musickit.example.json  # MusicKit 配置模板
-└── .gitignore
-```
-
----
-
-## 加一位歌手
-
-### 方式一：命令行（推荐）
+建议 Node.js 22。网页运行与桌面版共用 `index.html`、`server.js` 和 `lib/`，无需前端构建。
 
 ```bash
-npm run add-artist "Kendrick Lamar"
+npm ci
+npm run desktop              # 启动桌面应用
+npm test                     # 自动检查
+npm run desktop:smoke        # 桌面启动检查
 ```
 
-工具会自动完成：
-
-1. 搜网易云拿到艺人 ID
-2. 拉取全部专辑，排除单曲、deluxe、现场、混音、重复版本，按发行时间排序
-3. 查 iTunes 拿到 `itunesId`（用于高清封面）
-4. 取网易云头像
-5. 推导主题色
-
-常用参数：
+在对应操作系统上构建：
 
 ```bash
-npm run add-artist "Kendrick Lamar" --dry-run          # 只看结果，不写文件
-npm run add-artist "Kendrick Lamar" --id 37995         # 直接指定网易云艺人 ID
-npm run add-artist "Kendrick Lamar" --force            # 已存在时覆盖
-npm run add-artist "Kendrick Lamar" --include-singles  # 连单曲一起列出来
-npm run add-artist --list                              # 列出当前所有艺人
+npm run build:win            # Windows x64 安装程序
+npm run build:mac:arm64      # Apple 芯片 Mac：DMG + ZIP
+npm run build:mac:x64        # Intel Mac：DMG + ZIP
+npm run build:mac:dir        # 仅生成本机 Mac .app，供调试
 ```
 
-### 方式二：直接编辑 `artists.json`
+输出位于 `dist/`。Windows 安装包应在 Windows 上构建，Mac 安装包在 macOS 上构建。可用 `npm run desktop:smoke:package -- arm64` 检查已打包的 Apple 芯片应用；Windows 和 Intel Mac 使用 `x64`。
 
-```json
-{
-  "artists": [
-    {
-      "id": "37995",
-      "name": "Kendrick Lamar",
-      "albums": ["Section.80", "good kid, m.A.A.d city", "To Pimp a Butterfly", "DAMN."],
-      "color": "#2c3e50",
-      "itunesId": 368183298,
-      "avatar": "https://p3.music.126.net/....jpg?param=300y300"
-    }
-  ]
-}
-```
+### 自动发布
 
-| 字段 | 必填 | 说明 |
-|---|---|---|
-| `id` | ✅ | 网易云艺人 ID，从 `music.163.com/#/artist?id=xxx` 的 URL 里拿 |
-| `name` | ✅ | 显示名 |
-| `albums` | ✅ | 专辑名列表，按发行顺序排列 |
-| `color` | | 主题色。不写则按名字稳定推导 |
-| `itunesId` | | iTunes 艺人 ID。不写则启动时按名字自动搜 |
-| `avatar` | | 头像 URL。不写则从网易云艺人详情自动取 |
+[GitHub Actions](https://github.com/Justinchengpepe/music-player/actions/workflows/release.yml) 会先运行测试，再分别在 Windows、Apple 芯片 Mac、Intel Mac 上打包并验证应用启动。三个平台全部通过后，才生成校验值并发布到 GitHub Releases。
 
-> 改完 `artists.json` 重启服务即可生效，**不需要动任何代码**。
+后续发布：更新 `package.json`、`package-lock.json` 中的版本号与 `RELEASE_NOTES.md`，推送到 `main`。也可从 Actions 手动运行同一工作流。安装包不提交到源码仓库。
 
-### 关于 `albums` 的匹配规则
-
-`albums` 里写的是**专辑名**，服务启动后会拿去和网易云实际返回的专辑列表做匹配：
-
-- 归一化后完全相等才算命中（忽略大小写、括号内容、非字母数字字符）
-- 带 `(Deluxe)` / `(Live)` / `(Remix)` 等标记的版本会优先匹配同样带标记的那张
-- **匹配不上的专辑不会被静默丢弃** —— 服务端日志会打出 `⚠` 警告，同时通过接口的 `unmatched` 字段返回
-
-所以专辑名打错时你能立刻发现，而不是过几天才注意到少了一张。
-
----
-
-## 登录网易云（可选）
-
-不登录也能播放 30 秒试听片段；登录后解锁完整音质（999kbps）。
-
-点右上角「登录」，用网易云 App 扫码即可。已登录时点右上角胶囊可以退出。
-
-### 登录态是按人隔离的
-
-这是本项目一个重要的设计：**服务器上不保存任何账号凭证。**
-
-- 扫码拿到的 Cookie 只写进**访客自己的浏览器**（localStorage）
-- 每次请求通过 `X-Netease-Cookie` 请求头带给服务端，服务端用完即弃
-- 服务端进程本身永远是「未登录」状态
-
-所以就算部署到公网，也是**谁登录就是谁的账号**，彼此完全看不到对方。
-换设备、换浏览器都要重新扫码 —— 这是预期行为。
-
-> 早期版本会把 Cookie 存成服务端的 `.netease_cookie` 文件，一旦部署到公网就会导致
-> 「谁先扫码、之后所有访客都变成那个账号」。该行为已移除。
-
----
-
-## 环境变量
-
-| 变量 | 默认值 | 说明 |
-|---|---|---|
-| `PORT` | `8088` | 服务监听端口 |
-| `HOST` | `0.0.0.0` | 监听地址。桌面版由主进程设为 `127.0.0.1`，只对本机开放 |
-| `NETEASE_PROXY` | 无 | 网易云 API 请求代理地址，海外服务器部署时建议设置 |
-| `VINYL_DESKTOP_TOKEN` | 无 | 桌面版请求令牌。**只有设了它才启用鉴权**，网页版不用管 |
+## 添加歌手
 
 ```bash
-PORT=3000 NETEASE_PROXY=http://127.0.0.1:7890 npm start
+npm run add-artist "Frank Ocean"
+npm run add-artist --list
 ```
 
----
+精选入口保存在 `artists.json`；搜索不受精选名单限制。封面通过网易云与 Apple 的图片服务匹配，是否返回数据取决于平台接口。
 
-## 配置 MusicKit（可选）
+## 主要目录
 
-服务端预留了 Apple MusicKit Developer Token 签发接口（`/api/musickit/token`，ES256 JWT），
-**当前前端并未调用**，属于为后续扩展保留的能力。
-
-```bash
-cp musickit.example.json musickit.json
+```text
+index.html                    播放器界面与 3D 黑胶场景
+server.js / lib/              本地服务、音乐来源与歌词
+js/                           搜索、播放、账号、歌词、动画模块
+assets/                       样式与启动页
+artists.json                  精选歌手
+build/                        桌面图标
+desktop/                     Electron 主进程、预加载与后端入口
+scripts/                      歌手维护、安装包验证与校验值生成
+tests/                        自动检查
+docs/                         已有 GitHub Pages 展示页
+.github/workflows/release.yml  三平台构建与发布
 ```
 
-填入自己的 `teamId` / `keyId` / `privateKey`。该文件已在 `.gitignore` 中，不会被提交。
+更多实现记录见 [research/MACOS-PLAYER.md](research/MACOS-PLAYER.md)。
 
----
+## 许可与说明
 
-## API 接口
-
-所有接口以 `/api/` 开头，返回 JSON。
-
-需要登录态的接口（`song/url`、`album`、`lyric`、`search`、`login/status`）会读取请求头
-`X-Netease-Cookie`（URL 编码后的网易云 Cookie）。不带这个头就是匿名访问，服务端不会替你兜底。
-
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/api/artists` | 艺人列表（开场轮播用），含自动补全的 `color` / `avatar` |
-| GET | `/api/artist/albums?id=<艺人ID>` | 某位艺人的专辑：`hotAlbums`（含 iTunes 高清封面）+ 未匹配清单 `unmatched` |
-| GET | `/api/album?id=<专辑ID>` | 专辑详情与曲目列表 |
-| GET | `/api/song/url?id=<歌曲ID>` | 歌曲播放地址（带 Cookie 时返回 999kbps） |
-| GET | `/api/lyric?id=<歌曲ID>` | 歌词 |
-| GET | `/api/search?keywords=<关键词>&type=1&offset=0` | 搜索，支持分页。`type=100` 查艺人、`type=10` 查专辑 |
-| GET | `/api/cover?url=<图片地址>` | 同源封面代理，只放行网易云与 `mzstatic.com` 的 https 图片，供桌面版沙箱窗口使用 |
-| GET | `/api/login/qr/key` | 生成登录二维码 |
-| GET | `/api/login/qr/check?key=<key>` | 轮询扫码状态。`code=803` 时**在响应里返回 `cookie` 与 `nickname`**，由前端自行保存 |
-| GET | `/api/login/status` | 查询当前登录状态（读请求头，现查一次） |
-| GET | `/api/musickit/token` | 签发 Apple MusicKit Developer Token（ES256 JWT） |
-
----
-
-## 部署
-
-### GitHub Pages（只放展示页）
-
-`docs/` 是纯静态的项目展示页，已发布在 <https://justinchengpepe.github.io/music-player/>。
-
-```bash
-gh api -X POST repos/Justinchengpepe/music-player/pages \
-  --input <(echo '{"source":{"branch":"main","path":"/docs"}}')
-```
-
-改完 `docs/` 推到 main，Pages 会自动重新构建。**它只能展示截图，不能播放音乐** —— 原因见上。
-
-### 通用 Linux 服务器
-
-仓库内提供了 `deploy.sh`，基于 Node 20 + PM2：
-
-```bash
-scp -r . user@your-server:/opt/vinyl-player
-ssh user@your-server
-cd /opt/vinyl-player && bash deploy.sh
-```
-
-### Railway
-
-仓库内已包含 `.railwayignore`，直接连接 GitHub 仓库即可部署。记得配置 `NETEASE_PROXY`。
-
-> **可以放心部署到公网。** 登录态按访客隔离，服务器不落盘任何账号凭证。
-> 只需确认 `musickit.json`（你的 Apple 私钥）没有被一并上传 —— 它已在 `.gitignore` 中排除。
->
-> 建议启用 HTTPS：Cookie 是通过请求头传给服务端的，明文 HTTP 下可能被中间人截获。
-
-> **⚠️ 长期公开服务请先加限流。**
-> 当前 `server.js` 对 `/api/*` 没有任何速率限制，也不校验来源 —— 一旦公开，
-> 任何人都能拿你的服务器当网易云代理刷接口，流量和封 IP 的代价都算在你头上。
-> 小范围分享给朋友问题不大；如果是长期对外的服务，建议先加一层按 IP 的限流。
-
----
-
-## 说明与免责
-
-- 本项目仅用于个人学习与技术研究，音乐内容版权归各唱片公司及平台所有。
-- 网易云音乐接口通过开源库 [NeteaseCloudMusicApi](https://github.com/Binaryify/NeteaseCloudMusicApi) 调用，请遵守对应平台的服务条款。
-- 界面文案分工：主界面为英文，登录流程与播放提示为中文（涉及网易云账号与版权信息）。
-
-## License
-
-ISC
+源码使用 [ISC 许可](LICENSE)。音乐、封面、歌词与平台账号能力由相应服务提供，版权属于原权利人；本项目不提供或分发歌曲文件，不绕过平台付费或授权限制。

@@ -1,19 +1,12 @@
 # ---- 凭证：绝对不要提交 ----
 .netease_cookie
 musickit.json
+music-services.json
 .env
 .env.*
 
 # ---- 依赖 ----
 node_modules/
-
-# ---- 桌面版构建产物 ----
-dist/
-release/
-out/
-*.dmg
-*.AppImage
-*.exe
 
 # ---- 系统 ----
 .DS_Store
@@ -21,3 +14,14 @@ out/
 # ---- 日志 ----
 *.log
 npm-debug.log*
+
+# Desktop build artifacts
+dist/
+
+# Release outputs
+release/
+out/
+*.dmg
+*.exe
+*.blockmap
+*.AppImage

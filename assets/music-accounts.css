@@ -1,0 +1,43 @@
+#login-modal .login-card{max-width:424px;max-height:calc(100dvh - 48px);overflow-y:auto;padding:25px;gap:0;background:var(--surface);border-radius:24px;align-items:stretch}
+.accounts-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:20px}
+.accounts-heading h3{font-size:20px;letter-spacing:-.03em}
+#login-close{width:36px;height:36px;margin:-4px -6px -4px 0;border-radius:50%;color:var(--tx-2);display:grid;place-items:center}
+#login-close:hover{background:var(--hover)}
+#login-close svg{width:36px;height:36px}
+.accounts-list{display:flex;flex-direction:column;gap:4px}
+.account-row{width:100%;display:flex;align-items:center;text-align:left;gap:13px;padding:12px 9px;border-radius:14px;min-height:72px;color:var(--tx);transition:background .2s}
+.account-row:hover,.account-row[aria-expanded=true]{background:var(--hover)}
+.account-mark{width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:13px;color:#fff}
+.account-mark svg{width:34px;height:34px}
+.account-mark.netease{background:#d43d45}.account-mark.apple{background:linear-gradient(145deg,#fb6479,#df304d)}.account-mark.spotify{background:#1d3327;color:#63d88e}.account-mark.qq{background:#e9c66c;color:#354e3f}
+.account-copy{display:flex;flex-direction:column;gap:5px;min-width:0;flex:1}
+.account-copy strong{font-size:15px;font-weight:600;letter-spacing:-.02em}
+.account-copy small{font-size:12px;color:var(--tx-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.connected .account-copy small{color:#38825c}
+.account-chevron{font-size:23px;line-height:1;color:var(--tx-3);margin:0 3px 2px}
+.accounts-footnote{font-size:11px;color:var(--tx-3);text-align:center;margin-top:20px}
+.account-routing{margin:16px 9px 0;padding-top:17px;border-top:1px solid var(--line);display:grid;grid-template-columns:auto 1fr;align-items:center;gap:10px 20px}
+.account-routing label{font-size:12px;color:var(--tx-2)}
+#playback-source{max-width:100%;min-width:0;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--tx);font:inherit;font-size:12px;cursor:pointer}
+.account-routing .account-note{grid-column:1/-1;margin:0;font-size:11px}
+#playback-source:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.now-source{display:block;max-width:100%;padding:0;margin-top:6px;font-size:11px;color:var(--tx-3);text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+#account-detail{margin:14px 0 0;padding:18px 14px 0;border-top:1px solid var(--line);text-align:center}
+#account-detail[hidden]{display:none!important}
+.account-detail-title{font-size:14px;font-weight:600;margin-bottom:10px}
+.account-note,.account-message{font-size:12px;line-height:1.65;color:var(--tx-2);margin:8px 0 12px;text-wrap:pretty}
+.account-message:empty{display:none}.account-message.error{color:#c34b46}
+.account-action{font-size:13px;font-weight:500;border-radius:12px;padding:11px 16px;min-height:42px;background:var(--tx);color:var(--surface);display:inline-flex;align-items:center;justify-content:center;text-decoration:none;margin:3px 4px;cursor:pointer}
+.account-action.secondary{background:var(--hover);color:var(--tx-2)}
+.account-action:disabled{opacity:.5;cursor:wait}
+#account-detail #login-qr{display:block;margin:4px auto 12px;width:180px;height:180px;padding:9px}
+#account-detail #login-qr[hidden]{display:none}
+#spotify-connect{text-align:left;display:flex;flex-direction:column;gap:8px}
+#spotify-connect label{font-size:12px;color:var(--tx-2)}
+#spotify-client{width:100%;background:var(--hover);border:1px solid var(--line);border-radius:10px;padding:11px;color:var(--tx);font:inherit;font-size:13px}
+#spotify-connect .account-note{margin:4px 0 0}
+.account-callback{font-size:11px;color:var(--tx-2);overflow-wrap:anywhere;user-select:text;line-height:1.5}
+#spotify-connect .account-action{margin:6px 0 0}
+.account-row:focus-visible,#login-close:focus-visible,.account-action:focus-visible,#spotify-client:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media(prefers-reduced-motion:reduce){#login-modal .login-card{animation:none}.account-row{transition:none}}
+@media(max-width:480px){#login-modal{padding:16px}#login-modal .login-card{padding:20px;max-height:calc(100dvh - 32px)}}
